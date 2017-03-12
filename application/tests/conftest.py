@@ -3,7 +3,7 @@ import pytest
 from application.app import create_app
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def app():
     app = create_app()
     yield app
@@ -13,9 +13,3 @@ def app():
     client = MongoClient(app.config['MONGODB_SETTINGS']['host'])
     client.drop_database('test_database')
     client.close()
-
-
-@pytest.fixture
-def client(app):
-    with app.test_client() as client:
-        yield client
