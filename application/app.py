@@ -30,7 +30,7 @@ app = create_app()
 def create_admin():
     from application.models import User
 
-    user = User(user_name=current_app.config['ADMIN_USER'], email=current_app.config['ADMIN_EMAIL'])
+    user = User(user_name=current_app.config['ADMIN_USER'], email=current_app.config['ADMIN_EMAIL'], role='admin')
     user.hash_password(current_app.config['ADMIN_PASSWORD'])
 
     user.save()
