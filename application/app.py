@@ -1,4 +1,4 @@
-from flask import Flask, current_app
+from flask import Flask
 from flask_restful import Api
 
 from application.resources import Users, UserList, Authentications
@@ -16,21 +16,19 @@ def create_app():
 
     api.add_resource(Authentications, '/auth')
 
-    from application.models import db
+    from application.models import db, User
     db.init_app(app)
     api.init_app(app)
+
+    users = User.objects(role='admin')
+
+    if not users:
+        user = User(user_name=app.config['ADMIN_USER'], email=app.config['ADMIN_EMAIL'], role='admin')
+        user.hash_password(app.config['ADMIN_PASSWORD'])
+
+        user.save()
     
     return app
     
 
 app = create_app()
-
-
-@app.before_first_request
-def create_admin():
-    from application.models import User
-
-    user = User(user_name=current_app.config['ADMIN_USER'], email=current_app.config['ADMIN_EMAIL'], role='admin')
-    user.hash_password(current_app.config['ADMIN_PASSWORD'])
-
-    user.save()
