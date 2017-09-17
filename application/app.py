@@ -20,6 +20,13 @@ def create_app():
     db.init_app(app)
     api.init_app(app)
 
+    @app.after_request
+    def after_request(response):
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE')
+        return response
+
     users = User.objects(role='admin')
 
     if not users:
