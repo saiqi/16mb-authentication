@@ -94,7 +94,12 @@ class Authentications(Resource):
 
         args = parser.parse_args()
 
-        user = User.objects.get_or_404(user_name=args['user'])
+        qs = User.objects(user_name=args['user'])
+
+        if not qs:
+            abort(403)
+
+        user = qs[0]
 
         if user.verify_password(args['password']) is False:
             abort(403)
