@@ -97,11 +97,13 @@ class Authentications(Resource):
         qs = User.objects(user_name=args['user'])
 
         if not qs:
+            current_app.logger.warning('User {} not found'.format(args['user']))
             abort(403)
 
         user = qs[0]
 
         if user.verify_password(args['password']) is False:
+            current_app.logger.warning('User {} types wrong password !'.format(args['user']))
             abort(403)
 
         payload = {
