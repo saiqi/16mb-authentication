@@ -75,4 +75,4 @@ def test_authentication(app, admin_user, read_user):
         assert result.status_code == 403
 
         result = client.post('/auth', data={'user': 'nonexisted', 'password': 'tItI'})
-        assert result.status_code == 404
+        assert result.status_code == 403
