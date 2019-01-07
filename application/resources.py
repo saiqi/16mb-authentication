@@ -1,12 +1,15 @@
 import datetime
 import json
 from functools import wraps
+import string
+import random
 
 from flask import jsonify, current_app, request
 from flask_restful import Resource, abort, reqparse
 import jwt
 
 from application.models import User
+from application.mail import send_mail
 
 
 def login_required(f):
@@ -19,7 +22,8 @@ def login_required(f):
         token = request.headers.get('Authorization')
 
         try:
-            payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms='HS256')
+            payload = jwt.decode(
+                token, current_app.config['SECRET_KEY'], algorithms='HS256')
         except jwt.DecodeError:
             abort(401)
         except jwt.ExpiredSignatureError:
@@ -33,13 +37,27 @@ def login_required(f):
     return decorated_func
 
 
+def random_password():
+    min_length = 8
+    max_length = 12
+    choices = string.ascii_letters + string.punctuation + string.digits
+    return "".join(random.choice(choices) for x in range(random.randint(min_length, max_length)))
+
+
+def message_body(user, password):
+    return """Hi {user},
+Please find your account details below:
+USER: {user}
+PASSWORD: {password}
+    """.format(user=user, password=password)
+
+
 class UserList(Resource):
     method_decorators = [login_required]
 
     def post(self):
         parser = reqparse.RequestParser()
         parser.add_argument('user', required=True, dest='user_name')
-        parser.add_argument('password', required=True)
         parser.add_argument('role')
         parser.add_argument('first_name')
         parser.add_argument('last_name')
@@ -47,11 +65,16 @@ class UserList(Resource):
 
         args = parser.parse_args()
 
+        password = random_password()
+
         user = User(user_name=args['user_name'], role=args['role'], first_name=args['first_name'],
                     last_name=args['last_name'], email=args['email'])
-        user.hash_password(args['password'])
+        user.hash_password(password)
 
         user.save()
+
+        send_mail(args['email'], "Your account has been created on dsas.io", message_body(
+            args["user_name"], password))
 
         return "User {user_id} created".format(user_id=user.user_name), 201
 
@@ -75,11 +98,16 @@ class Users(Resource):
 
         args = parser.parse_args()
 
-        if 'role' in args and args['role'] is not None:
-            user.role = args['role']
+        if args['role'] and args['password']:
+            abort(400)
 
-        if 'password' in args and args['password'] is not None:
-            user.hash_password(args['password'])
+        if args['role']:
+            user.role = args['role']
+        else:
+            password = random_password()
+            user.hash_password(password)
+            send_mail(user.email, "Your account has been updated on dsas.io", message_body(
+                user_id, password))
 
         user.save()
 
@@ -97,13 +125,15 @@ class Authentications(Resource):
         qs = User.objects(user_name=args['user'])
 
         if not qs:
-            current_app.logger.warning('User {} not found'.format(args['user']))
+            current_app.logger.warning(
+                'User {} not found'.format(args['user']))
             abort(403)
 
         user = qs[0]
 
         if user.verify_password(args['password']) is False:
-            current_app.logger.warning('User {} types wrong password !'.format(args['user']))
+            current_app.logger.warning(
+                'User {} types wrong password !'.format(args['user']))
             abort(403)
 
         payload = {
@@ -112,6 +142,7 @@ class Authentications(Resource):
             'role': user.role
         }
 
-        token = jwt.encode(payload, current_app.config['SECRET_KEY'], algorithm='HS256')
+        token = jwt.encode(
+            payload, current_app.config['SECRET_KEY'], algorithm='HS256')
 
         return token.decode('unicode_escape'), 201

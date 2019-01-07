@@ -3,7 +3,6 @@ from flask_restful import Api
 
 from application.resources import Users, UserList, Authentications
 
-
 def create_app():
 
     app = Flask(__name__)
@@ -16,9 +15,13 @@ def create_app():
 
     api.add_resource(Authentications, '/auth')
 
+
     from application.models import db, User
     db.init_app(app)
+    from application.mail import mail
+    mail.init_app(app)
     api.init_app(app)
+
 
     @app.before_first_request
     def create_admin_user():
