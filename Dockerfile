@@ -1,8 +1,8 @@
 FROM python:3.6-alpine
-
-RUN pip install pytest flask-restful flask-mongoengine gunicorn passlib pyjwt flask-mail
 RUN mkdir /service
+ADD ./requirements.txt /service
+WORKDIR /service
+RUN pip install -r requirements.txt
 COPY application /service/application
 EXPOSE 5000
-WORKDIR /service
 CMD ["gunicorn","-b",":5000","application.app:app"]

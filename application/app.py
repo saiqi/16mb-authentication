@@ -6,7 +6,7 @@ from application.resources import Users, UserList, Authentications
 def create_app():
 
     app = Flask(__name__)
-    app.config.from_object('application.config.Config')
+    app.config.from_envvar('APPLICATION_SETTINGS')
 
     api = Api()
 
